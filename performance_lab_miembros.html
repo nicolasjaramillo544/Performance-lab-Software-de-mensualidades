@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance Lab — Gestión de Miembros</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f12; --bg2:#141720; --bg3:#1c2030; --bg4:#252a3e;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.14);
+  --text:#e8eaf0; --text2:#8b90a8; --text3:#555c78;
+  --blue:#4a90e2; --blue-dim:rgba(74,144,226,0.13);
+  --teal:#2ec4b6; --teal-dim:rgba(46,196,182,0.13);
+  --amber:#f4a435; --amber-dim:rgba(244,164,53,0.13);
+  --green:#5cb85c; --green-dim:rgba(92,184,92,0.13);
+  --red:#e05252; --red-dim:rgba(224,82,82,0.13);
+  --purple:#9b72cf; --purple-dim:rgba(155,114,207,0.13);
+  --r:12px; --rs:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:var(--bg)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.logo-name{font-size:15px;font-weight:600;letter-spacing:-.02em}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase}
+.nav-tabs{display:flex;gap:4px}
+.tab{padding:7px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:all .15s}
+.tab:hover{background:var(--bg3);color:var(--text)}
+.tab.active{background:var(--bg4);color:var(--text)}
+.btn{padding:8px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--blue);color:#fff;transition:all .15s}
+.btn:hover{background:#3a7fcf}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-ghost{background:transparent;color:var(--text2)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-danger{background:var(--red-dim);color:var(--red);border-color:transparent}
+.btn-danger:hover{background:var(--red);color:#fff}
+
+/* PAGES */
+.page{display:none;max-width:1100px;margin:0 auto;padding:24px 28px 60px}
+.page.active{display:block}
+
+/* STATS ROW */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:24px}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0}
+.stat.s-blue::before{background:var(--blue)}
+.stat.s-green::before{background:var(--green)}
+.stat.s-amber::before{background:var(--amber)}
+.stat.s-red::before{background:var(--red)}
+.stat-label{font-size:12px;color:var(--text2);margin-bottom:4px}
+.stat-val{font-size:26px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-.03em;line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* TABLE */
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.table-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.table-title{font-size:13px;font-weight:600}
+.search-input{background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 12px;border-radius:var(--rs);width:220px;outline:none;transition:border-color .2s}
+.search-input:focus{border-color:var(--blue)}
+.search-input::placeholder{color:var(--text3)}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;padding:10px 18px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:12px 18px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.02)}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 9px;border-radius:20px}
+.b-green{background:var(--green-dim);color:var(--green)}
+.b-amber{background:var(--amber-dim);color:var(--amber)}
+.b-red{background:var(--red-dim);color:var(--red)}
+.b-blue{background:var(--blue-dim);color:var(--blue)}
+.b-gray{background:var(--bg4);color:var(--text2)}
+.actions{display:flex;gap:6px}
+.empty{padding:40px 18px;text-align:center;color:var(--text3);font-size:13px}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid.full{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;color:var(--text2);font-weight:500}
+.field input,.field select,.field textarea{background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 12px;border-radius:var(--rs);outline:none;transition:border-color .2s;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue)}
+.field select option{background:var(--bg3)}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* MEMBER DETAIL */
+.detail-grid{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
+.detail-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.avatar{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;background:var(--blue-dim);color:var(--blue);margin-bottom:12px}
+.detail-name{font-size:17px;font-weight:600;margin-bottom:2px}
+.detail-plan{font-size:13px;color:var(--text2);margin-bottom:14px}
+.detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.detail-row:last-child{border-bottom:none}
+.dr-key{color:var(--text2)}
+.dr-val{color:var(--text);font-weight:500}
+.pay-history{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.pay-title{font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.pay-item{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.pay-item:last-child{border-bottom:none}
+.pay-date{color:var(--text2)}
+.pay-amount{font-family:'DM Mono',monospace;font-weight:500}
+
+/* FINANCE PAGE */
+.fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.fin-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.fc-label{font-size:12px;color:var(--text2);margin-bottom:6px}
+.fc-val{font-size:24px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-.02em}
+.fc-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.section-hd{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin:20px 0 10px}
+.alert-list{display:flex;flex-direction:column;gap:8px}
+.alert-item{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:12px 16px;font-size:13px}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* RESPONSIVE */
+@media(max-width:700px){
+  .nav{padding:12px 16px} .nav-tabs{display:none}
+  .page{padding:16px 14px 40px}
+  .detail-grid{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L3 5.5V11L8 14.5L13 11V5.5L8 2Z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" fill="white"/></svg>
+    </div>
+    <div>
+      <div class="logo-name">Performance Lab</div>
+      <div class="logo-sub">Gestión de Miembros</div>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="tab active" onclick="showPage('miembros')">Miembros</button>
+    <button class="tab" onclick="showPage('pagos')">Pagos</button>
+    <button class="tab" onclick="showPage('alertas')">Alertas</button>
+  </div>
+  <button class="btn" onclick="openModal()">+ Nuevo miembro</button>
+</div>
+
+<!-- ══════════ PAGE: MIEMBROS ══════════ -->
+<div id="page-miembros" class="page active">
+  <div class="stats">
+    <div class="stat s-blue"><div class="stat-label">Total miembros</div><div class="stat-val" id="st-total">0</div><div class="stat-sub">activos + inactivos</div></div>
+    <div class="stat s-green"><div class="stat-label">Activos este mes</div><div class="stat-val" id="st-activos">0</div><div class="stat-sub">membresía vigente</div></div>
+    <div class="stat s-amber"><div class="stat-label">Vencen pronto</div><div class="stat-val" id="st-vencen">0</div><div class="stat-sub">en los próximos 7 días</div></div>
+    <div class="stat s-red"><div class="stat-label">Vencidos</div><div class="stat-val" id="st-vencidos">0</div><div class="stat-sub">sin renovar</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-head">
+      <span class="table-title">Todos los miembros</span>
+      <input class="search-input" id="search" placeholder="Buscar por nombre o plan..." oninput="renderTable()">
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Miembro</th>
+          <th>Plan</th>
+          <th>Estado</th>
+          <th>Vence</th>
+          <th>Mensualidad</th>
+          <th>Entrenador</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="empty" class="empty" style="display:none">No hay miembros registrados. ¡Agrega el primero!</div>
+  </div>
+</div>
+
+<!-- ══════════ PAGE: PAGOS ══════════ -->
+<div id="page-pagos" class="page">
+  <div class="fin-grid">
+    <div class="fin-card"><div class="fc-label">Ingresos del mes</div><div class="fc-val" id="ing-mes">$0</div><div class="fc-sub">membresías cobradas</div></div>
+    <div class="fin-card"><div class="fc-label">Por cobrar</div><div class="fc-val" id="ing-cobrar">$0</div><div class="fc-sub">miembros activos pendientes</div></div>
+    <div class="fin-card"><div class="fc-label">Miembros fundadores</div><div class="fc-val" id="ing-fund">0</div><div class="fc-sub">de meta 100</div></div>
+    <div class="fin-card"><div class="fc-label">Ticket promedio</div><div class="fc-val" id="ing-avg">$0</div><div class="fc-sub">por membresía</div></div>
+  </div>
+
+  <div class="section-hd">Historial de pagos recientes</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Miembro</th><th>Plan</th><th>Monto</th><th>Fecha pago</th><th>Período</th><th>Estado</th></tr></thead>
+      <tbody id="tbody-pagos"></tbody>
+    </table>
+    <div id="empty-pagos" class="empty" style="display:none">No hay pagos registrados aún.</div>
+  </div>
+</div>
+
+<!-- ══════════ PAGE: ALERTAS ══════════ -->
+<div id="page-alertas" class="page">
+  <div class="section-hd">Membresías que vencen en los próximos 7 días</div>
+  <div class="alert-list" id="alert-pronto"></div>
+
+  <div class="section-hd" style="margin-top:24px">Membresías vencidas sin renovar</div>
+  <div class="alert-list" id="alert-vencidas"></div>
+
+  <div class="section-hd" style="margin-top:24px">Miembros fundadores — seguimiento preventa</div>
+  <div class="alert-list" id="alert-fund"></div>
+</div>
+
+<!-- ══════════ MODAL: NUEVO / EDITAR MIEMBRO ══════════ -->
+<div class="overlay" id="overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Nuevo miembro</div>
+    <div class="form-grid">
+      <div class="field"><label>Nombre completo *</label><input id="f-nombre" placeholder="Ej. Juan Pérez"></div>
+      <div class="field"><label>Teléfono</label><input id="f-tel" placeholder="Ej. 3001234567" type="tel"></div>
+      <div class="field"><label>Correo</label><input id="f-email" placeholder="correo@email.com" type="email"></div>
+      <div class="field"><label>Plan *</label>
+        <select id="f-plan">
+          <option value="">Seleccionar...</option>
+          <option value="Miembro Fundador">Miembro Fundador</option>
+          <option value="Plan Mensual">Plan Mensual</option>
+          <option value="Plan Trimestral">Plan Trimestral</option>
+          <option value="Plan Semestral">Plan Semestral</option>
+          <option value="Plan Anual">Plan Anual</option>
+          <option value="Fisioterapia">Fisioterapia</option>
+          <option value="Solo Cafetería">Solo Cafetería</option>
+        </select>
+      </div>
+      <div class="field"><label>Mensualidad (COP) *</label><input id="f-precio" placeholder="Ej. 200000" type="number"></div>
+      <div class="field"><label>Fecha de inicio *</label><input id="f-inicio" type="date"></div>
+      <div class="field"><label>Fecha de vencimiento *</label><input id="f-vence" type="date"></div>
+      <div class="field"><label>Entrenador asignado</label>
+        <select id="f-entrenador">
+          <option value="">Sin asignar</option>
+          <option value="Nicolás Jaramillo">Nicolás Jaramillo</option>
+          <option value="Entrenador 2">Entrenador 2</option>
+          <option value="Entrenador 3">Entrenador 3</option>
+          <option value="Entrenador 4">Entrenador 4</option>
+          <option value="Entrenador 5">Entrenador 5</option>
+          <option value="Fisioterapeuta">Fisioterapeuta</option>
+        </select>
+      </div>
+      <div class="field"><label>Estado</label>
+        <select id="f-estado">
+          <option value="Activo">Activo</option>
+          <option value="Pendiente pago">Pendiente pago</option>
+          <option value="Vencido">Vencido</option>
+          <option value="Congelado">Congelado</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid full" style="margin-top:14px">
+      <div class="field"><label>Notas</label><textarea id="f-notas" rows="2" placeholder="Observaciones, lesiones, preferencias..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn" onclick="saveMember()">Guardar miembro</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL: REGISTRAR PAGO ══════════ -->
+<div class="overlay" id="overlay-pago" onclick="closePagoOutside(event)">
+  <div class="modal">
+    <div class="modal-title">Registrar pago</div>
+    <div class="form-grid">
+      <div class="field"><label>Miembro</label><input id="p-nombre" readonly style="opacity:.6"></div>
+      <div class="field"><label>Monto (COP)</label><input id="p-monto" type="number"></div>
+      <div class="field"><label>Fecha de pago</label><input id="p-fecha" type="date"></div>
+      <div class="field"><label>Período</label><input id="p-periodo" placeholder="Ej. Julio 2025"></div>
+      <div class="field"><label>Método de pago</label>
+        <select id="p-metodo">
+          <option>Efectivo</option>
+          <option>Transferencia</option>
+          <option>Nequi</option>
+          <option>Daviplata</option>
+          <option>Tarjeta</option>
+        </select>
+      </div>
+      <div class="field"><label>Nueva fecha de vencimiento</label><input id="p-nuevo-vence" type="date"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closePago()">Cancelar</button>
+      <button class="btn" onclick="savePago()">Registrar pago</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let members = JSON.parse(localStorage.getItem('pl_members') || '[]');
+let payments = JSON.parse(localStorage.getItem('pl_payments') || '[]');
+let editId = null;
+let pagoMemberId = null;
+
+// ── UTILS ──
+function save() {
+  localStorage.setItem('pl_members', JSON.stringify(members));
+  localStorage.setItem('pl_payments', JSON.stringify(payments));
+}
+
+function fmtMoney(n) {
+  return '$' + Number(n).toLocaleString('es-CO');
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y,m,dd] = d.split('-');
+  return dd + '/' + m + '/' + y;
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return 999;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(dateStr + 'T00:00:00');
+  return Math.round((target - today) / 86400000);
+}
+
+function getStatus(m) {
+  const d = daysUntil(m.vence);
+  if (m.estado === 'Congelado') return { label:'Congelado', cls:'b-blue' };
+  if (m.estado === 'Inactivo')  return { label:'Inactivo',  cls:'b-gray' };
+  if (d < 0)  return { label:'Vencido',       cls:'b-red' };
+  if (d <= 7) return { label:'Vence pronto',  cls:'b-amber' };
+  return { label:'Activo', cls:'b-green' };
+}
+
+function initials(name) {
+  return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
+// ── PAGES ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => { if (t.textContent.toLowerCase().includes(id.slice(0,5))) t.classList.add('active'); });
+  if (id === 'pagos') renderPagos();
+  if (id === 'alertas') renderAlertas();
+}
+
+// ── STATS ──
+function updateStats() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  let activos = 0, vencen = 0, vencidos = 0;
+  members.forEach(m => {
+    const d = daysUntil(m.vence);
+    if (m.estado === 'Congelado' || m.estado === 'Inactivo') return;
+    if (d >= 0) activos++;
+    if (d >= 0 && d <= 7) vencen++;
+    if (d < 0) vencidos++;
+  });
+  document.getElementById('st-total').textContent = members.length;
+  document.getElementById('st-activos').textContent = activos;
+  document.getElementById('st-vencen').textContent = vencen;
+  document.getElementById('st-vencidos').textContent = vencidos;
+}
+
+// ── TABLE ──
+function renderTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const filtered = members.filter(m =>
+    m.nombre.toLowerCase().includes(q) ||
+    m.plan.toLowerCase().includes(q) ||
+    (m.entrenador||'').toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('tbody');
+  document.getElementById('empty').style.display = filtered.length ? 'none' : 'block';
+  tbody.innerHTML = filtered.map(m => {
+    const st = getStatus(m);
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--blue-dim);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">${initials(m.nombre)}</div>
+          <div>
+            <div style="font-weight:500;font-size:13px">${m.nombre}</div>
+            <div style="font-size:11px;color:var(--text3)">${m.tel||m.email||''}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge b-blue">${m.plan}</span></td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:${daysUntil(m.vence)<0?'var(--red)':daysUntil(m.vence)<=7?'var(--amber)':'var(--text2)'}">${fmtDate(m.vence)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:13px">${fmtMoney(m.precio)}</td>
+      <td style="color:var(--text2);font-size:12px">${m.entrenador||'—'}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-sm btn-ghost" onclick="openPago('${m.id}')">Cobrar</button>
+          <button class="btn btn-sm btn-ghost" onclick="editMember('${m.id}')">Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteMember('${m.id}')">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  updateStats();
+}
+
+// ── PAGOS PAGE ──
+function renderPagos() {
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+
+  const mesPays = payments.filter(p => {
+    const d = new Date(p.fecha);
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+  });
+  const ingMes = mesPays.reduce((s,p) => s + Number(p.monto), 0);
+
+  const activos = members.filter(m => {
+    const d = daysUntil(m.vence);
+    return d >= 0 && m.estado !== 'Congelado' && m.estado !== 'Inactivo';
+  });
+  const porCobrar = activos.reduce((s,m) => s + Number(m.precio), 0);
+  const fundadores = members.filter(m => m.plan === 'Miembro Fundador').length;
+  const avg = members.length > 0 ? Math.round(members.reduce((s,m) => s + Number(m.precio), 0) / members.length) : 0;
+
+  document.getElementById('ing-mes').textContent = fmtMoney(ingMes);
+  document.getElementById('ing-cobrar').textContent = fmtMoney(porCobrar);
+  document.getElementById('ing-fund').textContent = fundadores + ' / 100';
+  document.getElementById('ing-avg').textContent = fmtMoney(avg);
+
+  const sorted = [...payments].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+  const tbody = document.getElementById('tbody-pagos');
+  document.getElementById('empty-pagos').style.display = sorted.length ? 'none' : 'block';
+  tbody.innerHTML = sorted.slice(0,30).map(p => {
+    const m = members.find(x => x.id === p.memberId);
+    return `<tr>
+      <td>${m ? m.nombre : p.nombreSnapshot}</td>
+      <td><span class="badge b-blue">${m ? m.plan : '—'}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-weight:500">${fmtMoney(p.monto)}</td>
+      <td style="color:var(--text2)">${fmtDate(p.fecha)}</td>
+      <td style="color:var(--text2)">${p.periodo||'—'}</td>
+      <td><span class="badge b-green">Pagado</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── ALERTAS PAGE ──
+function renderAlertas() {
+  const pronto = members.filter(m => { const d=daysUntil(m.vence); return d>=0 && d<=7 && m.estado!=='Congelado' && m.estado!=='Inactivo'; });
+  const vencidas = members.filter(m => daysUntil(m.vence)<0 && m.estado!=='Congelado' && m.estado!=='Inactivo');
+  const fund = members.filter(m => m.plan==='Miembro Fundador');
+
+  const renderAlert = (list, color, fn) => list.length
+    ? list.map(fn).join('')
+    : `<div style="font-size:13px;color:var(--text3);padding:10px 0">Sin alertas en esta categoría.</div>`;
+
+  document.getElementById('alert-pronto').innerHTML = renderAlert(pronto, 'amber', m =>
+    `<div class="alert-item"><div class="alert-dot" style="background:var(--amber)"></div>
+     <div style="flex:1"><strong>${m.nombre}</strong> — ${m.plan} — vence en ${daysUntil(m.vence)} día(s) (${fmtDate(m.vence)})</div>
+     <button class="btn btn-sm" onclick="openPago('${m.id}')">Cobrar</button></div>`);
+
+  document.getElementById('alert-vencidas').innerHTML = renderAlert(vencidas, 'red', m =>
+    `<div class="alert-item"><div class="alert-dot" style="background:var(--red)"></div>
+     <div style="flex:1"><strong>${m.nombre}</strong> — ${m.plan} — venció el ${fmtDate(m.vence)} (${Math.abs(daysUntil(m.vence))} días)</div>
+     <button class="btn btn-sm" onclick="openPago('${m.id}')">Renovar</button></div>`);
+
+  document.getElementById('alert-fund').innerHTML = renderAlert(fund, 'blue', m =>
+    `<div class="alert-item"><div class="alert-dot" style="background:var(--blue)"></div>
+     <div style="flex:1"><strong>${m.nombre}</strong> — desde ${fmtDate(m.inicio)} — estado: <strong>${getStatus(m).label}</strong></div>
+     <span style="font-size:12px;color:var(--text2)">${m.tel||''}</span></div>`);
+}
+
+// ── MODAL MIEMBRO ──
+function openModal(id) {
+  editId = id || null;
+  const m = id ? members.find(x=>x.id===id) : null;
+  document.getElementById('modal-title').textContent = id ? 'Editar miembro' : 'Nuevo miembro';
+  document.getElementById('f-nombre').value   = m?.nombre   || '';
+  document.getElementById('f-tel').value      = m?.tel      || '';
+  document.getElementById('f-email').value    = m?.email    || '';
+  document.getElementById('f-plan').value     = m?.plan     || '';
+  document.getElementById('f-precio').value   = m?.precio   || '';
+  document.getElementById('f-inicio').value   = m?.inicio   || new Date().toISOString().slice(0,10);
+  document.getElementById('f-vence').value    = m?.vence    || '';
+  document.getElementById('f-entrenador').value = m?.entrenador || '';
+  document.getElementById('f-estado').value   = m?.estado   || 'Activo';
+  document.getElementById('f-notas').value    = m?.notas    || '';
+  document.getElementById('overlay').classList.add('open');
+}
+
+function editMember(id) { openModal(id); }
+
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function closeModalOutside(e) { if(e.target===document.getElementById('overlay')) closeModal(); }
+
+function saveMember() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const plan   = document.getElementById('f-plan').value;
+  const precio = document.getElementById('f-precio').value;
+  const inicio = document.getElementById('f-inicio').value;
+  const vence  = document.getElementById('f-vence').value;
+  if (!nombre||!plan||!precio||!inicio||!vence) { alert('Completa los campos obligatorios (*)'); return; }
+
+  const data = {
+    id: editId || Date.now().toString(),
+    nombre, plan, precio: Number(precio), inicio, vence,
+    tel:        document.getElementById('f-tel').value.trim(),
+    email:      document.getElementById('f-email').value.trim(),
+    entrenador: document.getElementById('f-entrenador').value,
+    estado:     document.getElementById('f-estado').value,
+    notas:      document.getElementById('f-notas').value.trim(),
+  };
+
+  if (editId) {
+    const i = members.findIndex(x=>x.id===editId);
+    members[i] = data;
+  } else {
+    members.push(data);
+  }
+  save(); closeModal(); renderTable();
+}
+
+function deleteMember(id) {
+  if (!confirm('¿Eliminar este miembro? Esta acción no se puede deshacer.')) return;
+  members = members.filter(x=>x.id!==id);
+  save(); renderTable();
+}
+
+// ── MODAL PAGO ──
+function openPago(memberId) {
+  pagoMemberId = memberId;
+  const m = members.find(x=>x.id===memberId);
+  document.getElementById('p-nombre').value = m.nombre;
+  document.getElementById('p-monto').value  = m.precio;
+  document.getElementById('p-fecha').value  = new Date().toISOString().slice(0,10);
+  const now = new Date();
+  document.getElementById('p-periodo').value = now.toLocaleString('es-CO',{month:'long',year:'numeric'});
+  const venceDate = new Date(m.vence + 'T00:00:00');
+  venceDate.setMonth(venceDate.getMonth()+1);
+  document.getElementById('p-nuevo-vence').value = venceDate.toISOString().slice(0,10);
+  document.getElementById('overlay-pago').classList.add('open');
+}
+
+function closePago() { document.getElementById('overlay-pago').classList.remove('open'); }
+function closePagoOutside(e) { if(e.target===document.getElementById('overlay-pago')) closePago(); }
+
+function savePago() {
+  const monto = document.getElementById('p-monto').value;
+  const fecha = document.getElementById('p-fecha').value;
+  const periodo = document.getElementById('p-periodo').value;
+  const nuevoVence = document.getElementById('p-nuevo-vence').value;
+  if (!monto||!fecha) { alert('Completa monto y fecha'); return; }
+
+  const m = members.find(x=>x.id===pagoMemberId);
+  payments.push({
+    id: Date.now().toString(),
+    memberId: pagoMemberId,
+    nombreSnapshot: m.nombre,
+    monto: Number(monto),
+    fecha, periodo,
+    metodo: document.getElementById('p-metodo').value,
+  });
+  if (nuevoVence) { m.vence = nuevoVence; m.estado = 'Activo'; }
+  save(); closePago(); renderTable();
+}
+
+// ── SEED DATA (demo) ──
+function seedIfEmpty() {
+  if (members.length > 0) return;
+  const today = new Date();
+  const fmt = d => d.toISOString().slice(0,10);
+  const addDays = n => { const d=new Date(today); d.setDate(d.getDate()+n); return fmt(d); };
+
+  members = [
+    { id:'1', nombre:'Santiago Restrepo', plan:'Miembro Fundador', precio:180000, inicio:addDays(-20), vence:addDays(10), tel:'3001234567', email:'santiago@email.com', entrenador:'Nicolás Jaramillo', estado:'Activo', notas:'Objetivo: hipertrofia. Sin lesiones previas.' },
+    { id:'2', nombre:'Valentina Torres', plan:'Plan Mensual', precio:220000, inicio:addDays(-15), vence:addDays(15), tel:'3112345678', email:'vale@email.com', entrenador:'Entrenador 2', estado:'Activo', notas:'Runner. Quiere mejorar fuerza de tren inferior.' },
+    { id:'3', nombre:'Andrés Gómez', plan:'Plan Trimestral', precio:580000, inicio:addDays(-5), vence:addDays(85), tel:'3201234567', email:'andres@email.com', entrenador:'Nicolás Jaramillo', estado:'Activo', notas:'' },
+    { id:'4', nombre:'Daniela Ospina', plan:'Fisioterapia', precio:150000, inicio:addDays(-30), vence:addDays(3), tel:'3051234567', email:'', entrenador:'Fisioterapeuta', estado:'Activo', notas:'Dolor lumbar crónico. En proceso de rehabilitación.' },
+    { id:'5', nombre:'Felipe Cardona', plan:'Miembro Fundador', precio:180000, inicio:addDays(-40), vence:addDays(-5), tel:'3141234567', email:'felipec@email.com', entrenador:'Entrenador 3', estado:'Vencido', notas:'' },
+  ];
+  payments = [
+    { id:'p1', memberId:'1', nombreSnapshot:'Santiago Restrepo', monto:180000, fecha:addDays(-20), periodo:'Junio 2025', metodo:'Nequi' },
+    { id:'p2', memberId:'2', nombreSnapshot:'Valentina Torres',  monto:220000, fecha:addDays(-15), periodo:'Junio 2025', metodo:'Transferencia' },
+    { id:'p3', memberId:'3', nombreSnapshot:'Andrés Gómez',      monto:580000, fecha:addDays(-5),  periodo:'Jun-Sep 2025', metodo:'Efectivo' },
+  ];
+  save();
+}
+
+seedIfEmpty();
+renderTable();
+</script>
+</body>
+</html>
